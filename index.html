@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teatro Teleprompter — Auto da Compadecida</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08091a;
+    --surface: #0f1225;
+    --surface2: #161930;
+    --accent: #ff8c42;
+    --accent2: #ff6b35;
+    --text: #f0e6d3;
+    --text-dim: #8a7d6e;
+    --border: rgba(255,140,66,0.25);
+    --glow: rgba(255,140,66,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── LAYOUT ── */
+  #app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px;
+    background: rgba(8,9,26,0.95);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px; font-weight: 900;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .logo span { color: var(--text); font-weight: 400; font-size: 13px; display: block; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+
+  /* ── MAIN CONTENT ── */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 0;
+  }
+
+  /* ── SIDEBAR ── */
+  sidebar, .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+    max-height: calc(100vh - 61px);
+    position: sticky;
+    top: 61px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  /* Character grid */
+  .char-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .char-btn {
+    padding: 8px 6px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    line-height: 1.2;
+  }
+  .char-btn:hover { border-color: var(--accent); color: var(--text); transform: scale(1.03); }
+  .char-btn.active { color: #1a1a1a; font-weight: 700; border-color: rgba(255,255,255,0.4); }
+
+  /* Controls */
+  .controls { display: flex; flex-direction: column; gap: 10px; }
+  .btn-row { display: flex; gap: 8px; }
+  .btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 6px; transition: all 0.2s;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #1a1a1a; }
+  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; transform: none; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); }
+  .btn-mic { background: #1a3a5c; color: var(--text); border: 1px solid #2c5f8d; }
+  .btn-mic.active { background: #5c1a1a; border-color: #ff6b35; animation: pulse-border 1.5s infinite; }
+  @keyframes pulse-border { 0%,100%{box-shadow:0 0 0 0 rgba(255,107,53,0.4)} 50%{box-shadow:0 0 0 6px rgba(255,107,53,0)} }
+  .btn-danger { background: #3a1a1a; color: #ff6b35; border: 1px solid #5c2020; }
+  .btn-danger:hover { background: #5c1a1a; }
+
+  /* Font size */
+  .font-control { display: flex; align-items: center; gap: 10px; }
+  input[type=range] {
+    flex: 1; height: 4px; border-radius: 2px; appearance: none;
+    background: linear-gradient(to right, var(--accent), var(--accent2));
+    outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); cursor: pointer;
+    box-shadow: 0 0 8px rgba(255,140,66,0.5);
+  }
+  .font-label { font-size: 12px; color: var(--accent); font-weight: 700; min-width: 36px; text-align: right; }
+
+  /* Progress */
+  .progress-bar { background: var(--surface2); border-radius: 4px; height: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.3s; border-radius: 4px; }
+  .progress-text { font-size: 11px; color: var(--text-dim); margin-top: 6px; text-align: center; }
+
+  /* Improv */
+  .improv-input-row { display: flex; gap: 6px; }
+  .improv-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none;
+  }
+  .improv-input:focus { border-color: var(--accent); }
+  .improv-input::placeholder { color: var(--text-dim); }
+  .improv-list { display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; }
+  .improv-item {
+    background: rgba(255,140,66,0.08); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px; font-size: 12px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  }
+  .improv-text { flex: 1; line-height: 1.4; }
+  .improv-del { background: none; border: none; color: #ff6b35; cursor: pointer; font-size: 16px; flex-shrink: 0; opacity: 0.7; }
+  .improv-del:hover { opacity: 1; }
+
+  /* ── TELEPROMPTER ── */
+  .stage {
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 40px;
+    min-height: calc(100vh - 61px);
+    position: relative;
+    overflow: hidden;
+  }
+  .stage::before {
+    content: '';
+    position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(255,140,66,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .teleprompter-card {
+    width: 100%; max-width: 900px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 52px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,140,66,0.08);
+    position: relative;
+    z-index: 1;
+  }
+
+  .char-name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-bottom: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 8px rgba(255,140,66,0.3));
+    transition: font-size 0.2s;
+  }
+
+  .line-text {
+    line-height: 2.1;
+    color: var(--text);
+    padding: 32px 40px;
+    background: rgba(255,140,66,0.04);
+    border-radius: 12px;
+    border: 1px solid rgba(255,140,66,0.12);
+    box-shadow: inset 0 2px 12px rgba(0,0,0,0.3);
+    min-height: 120px;
+    transition: font-size 0.2s;
+  }
+  .line-text .word { display: inline-block; margin-right: 12px; margin-bottom: 4px; transition: all 0.2s; }
+  .line-text .word.hl {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #1a1a1a; padding: 4px 10px; border-radius: 6px;
+    font-weight: 900; transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255,107,53,0.4);
+    animation: wordpulse 1s ease-in-out infinite;
+  }
+  @keyframes wordpulse { 0%,100%{opacity:1} 50%{opacity:0.85} }
+
+  .stage-note {
+    margin-top: 24px; padding: 14px 20px;
+    background: rgba(255,140,66,0.06);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    font-style: italic; color: #c8a880;
+    transition: font-size 0.2s;
+  }
+
+  .transcript-bar {
+    margin-top: 20px; padding: 14px 20px;
+    background: rgba(44,95,141,0.2);
+    border: 1px solid #2c5f8d;
+    border-radius: 10px; font-size: 13px; color: var(--text);
+  }
+  .transcript-bar strong { color: var(--accent); }
+
+  .empty-state {
+    text-align: center; color: var(--text-dim);
+    font-size: 18px; opacity: 0.6;
+  }
+
+  /* Status bar */
+  .status-bar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    padding: 10px 24px; border-radius: 40px;
+    font-size: 13px; font-weight: 600;
+    display: none; align-items: center; gap: 8px;
+    backdrop-filter: blur(12px);
+    z-index: 200;
+  }
+  .status-bar.listening {
+    display: flex; background: rgba(44,95,141,0.85);
+    border: 1px solid #2c5f8d; color: #a0c4e8;
+  }
+  .status-bar.error {
+    display: flex; background: rgba(92,26,26,0.85);
+    border: 1px solid #ff6b35; color: #ff8c42;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* Keyboard hint */
+  .kbd-hint { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 6px; }
+  kbd { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 10px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    main { grid-template-columns: 1fr; }
+    .sidebar { position: fixed; left: -100%; top: 0; bottom: 0; z-index: 200; width: 300px; transition: left 0.3s; max-height: 100vh; }
+    .sidebar.open { left: 0; }
+    .stage { padding: 20px; min-height: calc(100vh - 61px); }
+    .teleprompter-card { padding: 28px 24px; }
+    .mobile-toggle { display: flex !important; }
+  }
+  .mobile-toggle { display: none; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; color: var(--text); cursor: pointer; font-size: 13px; font-weight: 600; }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 190; }
+  .overlay.open { display: block; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">🎭 Teatro Teleprompter <span>Auto da Compadecida</span></div>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰ Controles</button>
+  </header>
+  <main>
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+
+      <!-- Personagem -->
+      <div>
+        <div class="section-title">👤 Personagem</div>
+        <div class="char-grid" id="charGrid"></div>
+      </div>
+
+      <!-- Navegação -->
+      <div>
+        <div class="section-title">⚙️ Navegação</div>
+        <div class="controls">
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btnPrev" onclick="prevLine()">▲ Anterior</button>
+            <button class="btn btn-primary" id="btnNext" onclick="nextLine()">▼ Próxima</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-mic" id="btnMic" onclick="toggleMic()">🎤 Escutar</button>
+            <button class="btn btn-secondary" onclick="resetScript()">↺ Reset</button>
+          </div>
+          <div class="kbd-hint"><kbd>←</kbd> anterior · <kbd>→</kbd> próxima · <kbd>Space</kbd> mic</div>
+        </div>
+      </div>
+
+      <!-- Progresso -->
+      <div>
+        <div class="section-title">📊 Progresso</div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="progress-text" id="progressText">0 / 0</div>
+      </div>
+
+      <!-- Fonte -->
+      <div>
+        <div class="section-title">🔤 Tamanho</div>
+        <div class="font-control">
+          <input type="range" min="24" max="64" value="40" id="fontRange" oninput="changeFontSize(this.value)">
+          <div class="font-label" id="fontLabel">40px</div>
+        </div>
+      </div>
+
+      <!-- Improvisações -->
+      <div>
+        <div class="section-title">🎭 Improvisações</div>
+        <div class="improv-input-row">
+          <input type="text" class="improv-input" id="improvInput" placeholder="Nova fala...">
+          <button class="btn btn-primary" style="flex:0;padding:8px 12px" onclick="addImprov()">+</button>
+        </div>
+        <div class="improv-list" id="improvList">
+          <div style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:8px">Nenhuma improvisação</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Stage -->
+    <div class="stage">
+      <div class="teleprompter-card" id="card">
+        <div class="empty-state">Selecione um personagem para começar</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="status-bar" id="statusBar">
+  <div class="status-dot"></div>
+  <span id="statusText">🎤 Escutando...</span>
+</div>
+
+<script>
+// ── DATA ──
+const characters = [
+  { id:"jovem1", name:"JOVEM 1", displayName:"Jovem 1", color:"#FF6B6B", description:"Jovem descontraído, sempre procurando internet" },
+  { id:"jovem2", name:"JOVEM 2", displayName:"Jovem 2", color:"#4ECDC4", description:"Jovem que estava assistindo série" },
+  { id:"jovem3", name:"JOVEM 3", displayName:"Jovem 3", color:"#FFE66D", description:"Jovem que só lê legenda" },
+  { id:"jovem4", name:"JOVEM 4", displayName:"Jovem 4", color:"#95E1D3", description:"Jovem observador" },
+  { id:"jovem5", name:"JOVEM 5", displayName:"Jovem 5", color:"#C7CEEA", description:"Jovem questionador" },
+  { id:"bibliotecario", name:"BIBLIOTECÁRIO", displayName:"Bibliotecário", color:"#B19CD9", description:"Guardião dos livros" },
+  { id:"joao", name:"JOÃO GRILO", displayName:"João Grilo", color:"#C85A17", description:"Protagonista esperto e pobre do sertão" },
+  { id:"chico", name:"CHICÓ", displayName:"Chicó", color:"#E8D4B8", description:"Companheiro medroso de João" },
+  { id:"encourado", name:"ENCOURADO", displayName:"Encourado", color:"#722F37", description:"O Diabo, juiz do julgamento" },
+  { id:"jesus", name:"JESUS", displayName:"Jesus", color:"#F5E6D3", description:"Jesus Cristo no julgamento" },
+  { id:"maria", name:"MARIA", displayName:"Maria", color:"#2C5F8D", description:"Nossa Senhora, a Compadecida" },
+  { id:"narrador", name:"NARRADOR", displayName:"Narrador", color:"#A0A0A0", description:"Voz que narra a história" },
+  { id:"todos", name:"TODOS", displayName:"Todos", color:"#666666", description:"Quando todos falam junto" }
+];
+
+const scriptLines = [
+  {id:"1-1-1",character:"JOVEM 1",text:"Gente… pelo amor de Deus… alguém tem internet?",act:1,scene:1},
+  {id:"1-1-2",character:"JOVEM 2",text:"A minha acabou no meio do vídeo!",act:1,scene:1},
+  {id:"1-1-3",character:"JOVEM 3",text:"Eu tava quase zerando minha série…",act:1,scene:1},
+  {id:"1-1-4",character:"JOVEM 4",text:"Calma, calma!\nMeu primo falou que aqui tem Wi-Fi grátis.",act:1,scene:1},
+  {id:"1-1-5",character:"TODOS",text:"(Todos param e olham em volta.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-6",character:"JOVEM 5",text:"Peraí…\nIsso aqui é uma biblioteca MESMO?",act:1,scene:1},
+  {id:"1-1-7",character:"JOVEM 2",text:"Achei que biblioteca nem existia mais.",act:1,scene:1},
+  {id:"1-1-8",character:"JOVEM 1",text:"Achei que era coisa de filme antigo.",act:1,scene:1},
+  {id:"1-1-9",character:"JOVEM 3",text:"Ou lugar de castigo de escola.",act:1,scene:1},
+  {id:"1-1-10",character:"TODOS",text:"(Todos riem.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-11",character:"JOVEM 4",text:"Nossa, olha o tanto de livro…",act:1,scene:1},
+  {id:"1-1-12",character:"JOVEM 5",text:"E ninguém pegando.",act:1,scene:1},
+  {id:"1-1-13",character:"JOVEM 2",text:"Porque ninguém lê mais, né.",act:1,scene:1},
+  {id:"1-1-14",character:"JOVEM 1",text:"Hoje em dia o povo vê resumo no TikTok.",act:1,scene:1},
+  {id:"1-1-15",character:"JOVEM 3",text:"Eu só leio legenda de série.",act:1,scene:1},
+  {id:"1-1-16",character:"JOVEM 4",text:"Mentira.\nVocê nem lê legenda. Assiste tudo dublado.",act:1,scene:1},
+  {id:"1-1-17",character:"TODOS",text:"(Risos.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-18",character:"JOVEM 5",text:"Imagina vir aqui por vontade própria…",act:1,scene:1},
+  {id:"1-1-19",character:"JOVEM 2",text:"Você entra e automaticamente sente vontade de cochilar.",act:1,scene:1},
+  {id:"1-1-20",character:"TODOS",text:"(Eles sentam espalhados procurando sinal.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-21",character:"JOVEM 1",text:"Qual é a senha do Wi-Fi?",act:1,scene:1},
+  {id:"1-1-22",character:"JOVEM 4",text:"\"Leiaumlivro\".",act:1,scene:1},
+  {id:"1-1-23",character:"TODOS",text:"Nãããão…",act:1,scene:1},
+  {id:"1-1-24",character:"JOVEM 3",text:"Isso já é humilhação.",act:1,scene:1},
+  {id:"1-1-25",character:"TODOS",text:"(O bibliotecário aparece silenciosamente atrás deles segurando um livro.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-26",character:"BIBLIOTECÁRIO",text:"A humilhação maior é entrar numa biblioteca e fingir que os livros são invisíveis.",act:1,scene:1},
+  {id:"1-1-27",character:"TODOS",text:"(Os jovens se assustam.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-28",character:"JOVEM 2",text:"Meu Deus!\nVocê brotou do além!",act:1,scene:1},
+  {id:"1-1-29",character:"JOVEM 5",text:"NPC de biblioteca.",act:1,scene:1},
+  {id:"1-1-30",character:"BIBLIOTECÁRIO",text:"Interessante…\nVocês conseguem passar horas olhando uma tela…\nMas cinco segundos perto de um livro já causa sofrimento.",act:1,scene:1},
+  {id:"1-1-31",character:"JOVEM 1",text:"Não é sofrimento…\nÉ costume.",act:1,scene:1},
+  {id:"1-1-32",character:"JOVEM 3",text:"Livro parece sempre coisa de prova.",act:1,scene:1},
+  {id:"1-1-33",character:"JOVEM 4",text:"Ou trabalho da escola.",act:1,scene:1},
+  {id:"1-1-34",character:"JOVEM 2",text:"Ou aqueles textos enormes que ninguém entende.",act:1,scene:1},
+  {id:"1-1-35",character:"BIBLIOTECÁRIO",text:"Então talvez vocês nunca tenham encontrado a história certa.",act:1,scene:1},
+  {id:"1-1-36",character:"TODOS",text:"(Pausa.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-37",character:"JOVEM 5",text:"Tem livro engraçado pelo menos?",act:1,scene:1},
+  {id:"1-1-38",character:"BIBLIOTECÁRIO",text:"Tem um sobre dois homens que viviam inventando confusão, enganando gente rica, fugindo de problema…\nE um deles mentia tanto que parecia comentarista de internet.",act:1,scene:1},
+  {id:"1-1-39",character:"JOVEM 3",text:"Agora ficou interessante.",act:1,scene:1},
+  {id:"1-1-40",character:"JOVEM 1",text:"Eles eram criminosos?",act:1,scene:1},
+  {id:"1-1-41",character:"BIBLIOTECÁRIO",text:"Não exatamente.\nEram sobreviventes.",act:1,scene:1},
+  {id:"1-1-42",character:"JOVEM 2",text:"Isso tá começando a parecer série da Netflix.",act:1,scene:1},
+  {id:"1-1-43",character:"BIBLIOTECÁRIO",text:"Só que muito antes da Netflix existir.",act:1,scene:1},
+  {id:"1-1-44",character:"TODOS",text:"(Ele mostra o livro.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-45",character:"BIBLIOTECÁRIO",text:"\"O Auto da Compadecida\", de Ariano Suassuna.",act:1,scene:1},
+  {id:"1-1-46",character:"JOVEM 4",text:"Já ouvi falar desse nome.",act:1,scene:1},
+  {id:"1-1-47",character:"JOVEM 5",text:"Não é aquele do cachorro que recebe enterro de luxo?",act:1,scene:1},
+  {id:"1-1-48",character:"BIBLIOTECÁRIO",text:"Esse mesmo.",act:1,scene:1},
+  {id:"1-1-49",character:"JOVEM 1",text:"Pera…\nEssa história é comédia?",act:1,scene:1},
+  {id:"1-1-50",character:"BIBLIOTECÁRIO",text:"Comédia, crítica social, religião, Nordeste brasileiro… tudo junto.",act:1,scene:1},
+  {id:"1-1-51",character:"JOVEM 3",text:"E funciona?",act:1,scene:1},
+  {id:"1-1-52",character:"BIBLIOTECÁRIO",text:"Tanto funciona…\nQue até hoje as pessoas continuam assistindo, lendo e montando essa peça.",act:1,scene:1},
+  {id:"1-1-53",character:"JOVEM 2",text:"Tá… mas qual a parte mais doida?",act:1,scene:1},
+  {id:"1-1-54",character:"BIBLIOTECÁRIO",text:"O julgamento final.",act:1,scene:1},
+  {id:"1-1-55",character:"JOVEM 4",text:"Como assim?",act:1,scene:1},
+  {id:"1-1-56",character:"BIBLIOTECÁRIO",text:"Os personagens morrem…\nE vão parar diante de Jesus, Nossa Senhora… e do Diabo.",act:1,scene:1},
+  {id:"1-1-57",character:"TODOS",text:"(Silêncio.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-58",character:"JOVEM 5",text:"Aí o negócio escalou rápido.",act:1,scene:1},
+  {id:"1-1-59",character:"JOVEM 1",text:"Tá, agora eu quero ver isso.",act:1,scene:1},
+  {id:"1-1-60",character:"BIBLIOTECÁRIO",text:"Então guardem os celulares por alguns minutos…\nE prestem atenção.\nPorque no sertão nordestino…\nA esperteza era uma forma de sobrevivência.",act:1,scene:1},
+  {id:"1-1-61",character:"TODOS",text:"(Luzes diminuem lentamente. Som de sanfona começa.)",act:1,scene:1,notes:"Ação cênica"},
+  {id:"1-1-62",character:"NARRADOR",text:"No sertão nordestino, onde o sol castiga, a fome aperta e a esperteza vale mais que dinheiro… nasceram João Grilo e Chicó…",act:1,scene:1},
+  {id:"2-1-1",character:"TODOS",text:"(Luzes baixas. Sons de vento forte. João Grilo e Chicó aparecem assustados no centro do palco.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-2",character:"ENCOURADO",text:"(Andando ao redor deles)\nOra, ora…\nVeja só quem chegou por aqui!\nDois cabras enrolados…\nDois mentirosos profissionais…\nE provavelmente os homens que mais deram trabalho no sertão!",act:2,scene:1},
+  {id:"2-1-3",character:"CHICÓ",text:"(Tremendo)\nJoão…\nEu num gosto disso não…",act:2,scene:1},
+  {id:"2-1-4",character:"JOÃO GRILO",text:"Nem eu, Chicó.",act:2,scene:1},
+  {id:"2-1-5",character:"CHICÓ",text:"Tenho medo dessas coisas sobrenaturais.",act:2,scene:1},
+  {id:"2-1-6",character:"JOÃO GRILO",text:"E eu tenho medo é desse homem olhando pra nós desse jeito.",act:2,scene:1},
+  {id:"2-1-7",character:"ENCOURADO",text:"(Parando diante deles)\nVocês dois tão lascados!\nMentira… enrolação… enganação…\nEspecialmente você, João Grilo!",act:2,scene:1},
+  {id:"2-1-8",character:"JOÃO GRILO",text:"(Indignado)\nOxente!\nPor que eu primeiro?",act:2,scene:1},
+  {id:"2-1-9",character:"ENCOURADO",text:"Porque você enganava padre, patrão, coronel…\nSe duvidar, enganava até relógio!",act:2,scene:1},
+  {id:"2-1-10",character:"CHICÓ",text:"Isso é verdade.",act:2,scene:1},
+  {id:"2-1-11",character:"JOÃO GRILO",text:"Cale a boca, Chicó!\nAqui não é hora de sinceridade.",act:2,scene:1},
+  {id:"2-1-12",character:"CHICÓ",text:"Foi mal.",act:2,scene:1},
+  {id:"2-1-13",character:"ENCOURADO",text:"E ainda fazia tudo sorrindo!",act:2,scene:1},
+  {id:"2-1-14",character:"JOÃO GRILO",text:"(Orgulhoso)\nMas eu era pobre!\nNo sertão, quem não aprende a ser esperto morre de fome.",act:2,scene:1},
+  {id:"2-1-15",character:"ENCOURADO",text:"E acha que isso justifica tudo?",act:2,scene:1},
+  {id:"2-1-16",character:"JOÃO GRILO",text:"Não justifica…\nMas explica muita coisa.",act:2,scene:1},
+  {id:"2-1-17",character:"CHICÓ",text:"(Levantando a mão timidamente)\nPosso falar uma coisa?",act:2,scene:1},
+  {id:"2-1-18",character:"ENCOURADO",text:"Não.",act:2,scene:1},
+  {id:"2-1-19",character:"CHICÓ",text:"Mesmo assim eu vou falar.\nEu só seguia João porque sozinho eu tinha mais medo ainda.",act:2,scene:1},
+  {id:"2-1-20",character:"JOÃO GRILO",text:"Tá vendo?\nEu fazia caridade.",act:2,scene:1},
+  {id:"2-1-21",character:"ENCOURADO",text:"Caridade?\nVocê vivia criando confusão!",act:2,scene:1},
+  {id:"2-1-22",character:"JOÃO GRILO",text:"Mas confusão inteligente.",act:2,scene:1},
+  {id:"2-1-23",character:"JESUS",text:"Silêncio.",act:2,scene:1},
+  {id:"2-1-24",character:"TODOS",text:"(Todos se calam imediatamente.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-25",character:"JESUS",text:"Toda alma merece ser ouvida antes do julgamento.",act:2,scene:1},
+  {id:"2-1-26",character:"ENCOURADO",text:"Mas esses dois…",act:2,scene:1},
+  {id:"2-1-27",character:"JESUS",text:"Eu disse silêncio.",act:2,scene:1},
+  {id:"2-1-28",character:"TODOS",text:"(Encourado recua irritado.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-29",character:"CHICÓ",text:"(Se ajoelhando rapidamente)\nMeu senhor, eu sou um homem medroso…\nMas de coração bom!",act:2,scene:1},
+  {id:"2-1-30",character:"ENCOURADO",text:"Bom?\nEsse aí mentia mais do que respirava!",act:2,scene:1},
+  {id:"2-1-31",character:"CHICÓ",text:"Mas era mentira sem maldade!",act:2,scene:1},
+  {id:"2-1-32",character:"JOÃO GRILO",text:"Isso é verdade.\nChicó mente por esporte.",act:2,scene:1},
+  {id:"2-1-33",character:"CHICÓ",text:"Às vezes eu nem queria mentir…\nA mentira já saía pronta.",act:2,scene:1},
+  {id:"2-1-34",character:"TODOS",text:"(Plateia ri.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-35",character:"JESUS",text:"E você, João Grilo?\nO que tem a dizer sobre sua vida?",act:2,scene:1},
+  {id:"2-1-36",character:"TODOS",text:"(João respira fundo.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-37",character:"JOÃO GRILO",text:"Eu fui pobre a vida inteira.\nPassei fome…\nDormia sem saber se ia comer no outro dia…\nFui humilhado pelos ricos… enganado pelos poderosos…\nAprendi cedo que, no sertão, pobre sem esperteza não sobrevive.",act:2,scene:1},
+  {id:"2-1-38",character:"ENCOURADO",text:"Tentando fazer discurso bonito agora?",act:2,scene:1},
+  {id:"2-1-39",character:"JOÃO GRILO",text:"Não, senhor.\nSó quero justiça.",act:2,scene:1},
+  {id:"2-1-40",character:"ENCOURADO",text:"Justiça?\nVocê enganou meio mundo!",act:2,scene:1},
+  {id:"2-1-41",character:"JOÃO GRILO",text:"Porque meio mundo tentava passar por cima de mim.",act:2,scene:1},
+  {id:"2-1-42",character:"TODOS",text:"(Pausa.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-43",character:"JOÃO GRILO",text:"Nunca tive dinheiro.\nNunca tive poder.\nTudo que eu tinha era minha cabeça funcionando rápido.",act:2,scene:1},
+  {id:"2-1-44",character:"CHICÓ",text:"E funcionava rápido demais.",act:2,scene:1},
+  {id:"2-1-45",character:"JOÃO GRILO",text:"Obrigado, Chicó.",act:2,scene:1},
+  {id:"2-1-46",character:"CHICÓ",text:"Não foi elogio.",act:2,scene:1},
+  {id:"2-1-47",character:"JESUS",text:"(Refletindo)\nA vida pode endurecer o coração dos homens…\nMas também revela suas dores.",act:2,scene:1},
+  {id:"2-1-48",character:"ENCOURADO",text:"Dor não apaga pecado!",act:2,scene:1},
+  {id:"2-1-49",character:"JESUS",text:"Não apaga.\nMas merece ser compreendida.",act:2,scene:1},
+  {id:"2-1-50",character:"CHICÓ",text:"(Encantado)\nValha-me Nossa Senhora!",act:2,scene:1},
+  {id:"2-1-51",character:"JOÃO GRILO",text:"Agora nós tamo salvos!",act:2,scene:1},
+  {id:"2-1-52",character:"MARIA",text:"Meu filho João…\nVocê continua atrevido.",act:2,scene:1},
+  {id:"2-1-53",character:"JOÃO GRILO",text:"Se não fosse a atrevida da esperança, pobre nem vivia.",act:2,scene:1},
+  {id:"2-1-54",character:"MARIA",text:"(Sorrindo levemente)\nContinua respondão também.",act:2,scene:1},
+  {id:"2-1-55",character:"JOÃO GRILO",text:"É nervoso.",act:2,scene:1},
+  {id:"2-1-56",character:"CHICÓ",text:"Ele responde até morto.",act:2,scene:1},
+  {id:"2-1-57",character:"TODOS",text:"(Risos.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-58",character:"MARIA",text:"(Com doçura)\nJesus… olhe para eles com compaixão.\nSão filhos sofridos do sertão.",act:2,scene:1},
+  {id:"2-1-59",character:"ENCOURADO",text:"Mas pecaram!",act:2,scene:1},
+  {id:"2-1-60",character:"MARIA",text:"E quem nunca pecou?",act:2,scene:1},
+  {id:"2-1-61",character:"TODOS",text:"(Silêncio.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-62",character:"MARIA",text:"João Grilo errou muitas vezes.\nMas também sofreu muito.\nConheceu a fome…\nA injustiça…\nO abandono…",act:2,scene:1},
+  {id:"2-1-63",character:"CHICÓ",text:"E as contas também.",act:2,scene:1},
+  {id:"2-1-64",character:"JOÃO GRILO",text:"Principalmente as contas.",act:2,scene:1},
+  {id:"2-1-65",character:"TODOS",text:"(Plateia ri.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-66",character:"MARIA",text:"Mesmo vivendo em dificuldade…\nEle nunca perdeu a vontade de viver.",act:2,scene:1},
+  {id:"2-1-67",character:"ENCOURADO",text:"Mas vivia enganando os outros!",act:2,scene:1},
+  {id:"2-1-68",character:"MARIA",text:"E quantas vezes ele também foi enganado?",act:2,scene:1},
+  {id:"2-1-69",character:"TODOS",text:"(Encourado se cala por um instante.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-70",character:"JESUS",text:"(Refletindo)\nA dor não apaga os erros…\nMas ensina humanidade.",act:2,scene:1},
+  {id:"2-1-71",character:"JOÃO GRILO",text:"Eu só queria sobreviver.",act:2,scene:1},
+  {id:"2-1-72",character:"MARIA",text:"E ajudou muita gente no caminho…\nMesmo do seu jeito torto.",act:2,scene:1},
+  {id:"2-1-73",character:"CHICÓ",text:"Muito torto.",act:2,scene:1},
+  {id:"2-1-74",character:"JOÃO GRILO",text:"Rapaz, hoje você resolveu me destruir.",act:2,scene:1},
+  {id:"2-1-75",character:"ENCOURADO",text:"Isso é injusto!",act:2,scene:1},
+  {id:"2-1-76",character:"MARIA",text:"Injustiça é condenar alguém sem enxergar sua história.",act:2,scene:1},
+  {id:"2-1-77",character:"ENCOURADO",text:"Então agora qualquer um faz besteira e pronto?",act:2,scene:1},
+  {id:"2-1-78",character:"JESUS",text:"Não.\nMas nenhum ser humano é apenas seus erros.",act:2,scene:1},
+  {id:"2-1-79",character:"TODOS",text:"(Pausa.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-80",character:"JESUS",text:"João Grilo…\nVocê terá uma nova chance.",act:2,scene:1},
+  {id:"2-1-81",character:"JOÃO GRILO",text:"(Animado, olhando pra Chicó)\nQuer dizer que eu volto?",act:2,scene:1},
+  {id:"2-1-82",character:"CHICÓ",text:"João… pergunta direito pra ter certeza!",act:2,scene:1},
+  {id:"2-1-83",character:"JOÃO GRILO",text:"Eu volto vivo mesmo?\nRespirando e tudo?",act:2,scene:1},
+  {id:"2-1-84",character:"JESUS",text:"Volta.\nMas trate de viver direito dessa vez.",act:2,scene:1},
+  {id:"2-1-85",character:"JOÃO GRILO",text:"Vou tentar…\nMas num prometo milagre também não.",act:2,scene:1},
+  {id:"2-1-86",character:"TODOS",text:"(Plateia ri.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-87",character:"JESUS",text:"E você, Chicó?",act:2,scene:1},
+  {id:"2-1-88",character:"CHICÓ",text:"Eu posso voltar também?",act:2,scene:1},
+  {id:"2-1-89",character:"ENCOURADO",text:"Esse aí vai voltar mentindo até pros anjos.",act:2,scene:1},
+  {id:"2-1-90",character:"CHICÓ",text:"Eu posso explicar…",act:2,scene:1},
+  {id:"2-1-91",character:"JESUS",text:"Pode voltar também.\nMas tente falar menos mentira.",act:2,scene:1},
+  {id:"2-1-92",character:"CHICÓ",text:"Ave Maria…\nAí já é mais difícil.",act:2,scene:1},
+  {id:"2-1-93",character:"TODOS",text:"(Todos riem.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-94",character:"ENCOURADO",text:"(Resmungando e cruzando os braços)\nAssim não tem graça nenhuma…",act:2,scene:1},
+  {id:"2-1-95",character:"MARIA",text:"A graça está justamente no perdão.",act:2,scene:1},
+  {id:"2-1-96",character:"TODOS",text:"(Luzes diminuem lentamente.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-97",character:"JOÃO GRILO",text:"Vamos simbora, Chicó!",act:2,scene:1},
+  {id:"2-1-98",character:"CHICÓ",text:"Só acredito porque tô vendo!",act:2,scene:1},
+  {id:"2-1-99",character:"JOÃO GRILO",text:"E ande logo antes que mudem de ideia!",act:2,scene:1},
+  {id:"2-1-100",character:"TODOS",text:"(Os dois saem correndo atrapalhados. Música nordestina começa a tocar.)",act:2,scene:1,notes:"Ação cênica"},
+  {id:"2-1-101",character:"TODOS",text:"(Luzes se apagam.)",act:2,scene:1,notes:"Ação cênica"}
+];
+
+// ── STATE ──
+let selectedCharId = "joao";
+let currentIdx = 0;
+let fontSize = 40;
+let improvisations = [];
+let isListening = false;
+let recognition = null;
+let highlightedWords = [];
+let transcript = "";
+let silenceTimer = null;
+
+function getCharacterLines(charId) {
+  const char = characters.find(c => c.id === charId);
+  if (!char) return [];
+  const base = scriptLines.filter(l => l.character === char.name);
+  const improvLines = improvisations.map(i => ({
+    id: i.id, character: char.name, text: i.text, act: 0, scene: 0
+  }));
+  return [...base, ...improvLines];
+}
+
+// ── RENDER ──
+function render() {
+  renderChars();
+  renderStage();
+  renderProgress();
+}
+
+function renderChars() {
+  const grid = document.getElementById('charGrid');
+  grid.innerHTML = characters.map(c => `
+    <button class="char-btn ${c.id === selectedCharId ? 'active' : ''}"
+      style="${c.id === selectedCharId ? `background:${c.color};` : ''}"
+      onclick="selectChar('${c.id}')"
+      title="${c.description}">
+      ${c.displayName}
+    </button>
+  `).join('');
+}
+
+function renderStage() {
+  const lines = getCharacterLines(selectedCharId);
+  const line = lines[currentIdx];
+  const char = characters.find(c => c.id === selectedCharId);
+  const card = document.getElementById('card');
+
+  if (!line) {
+    card.innerHTML = '<div class="empty-state">Selecione um personagem para começar</div>';
+    return;
+  }
+
+  const nameSize = Math.round(fontSize * 0.75);
+  const noteSize = Math.round(fontSize * 0.55);
+
+  card.innerHTML = `
+    <div class="char-name" style="font-size:${nameSize}px">${line.character}</div>
+    <div class="line-text" style="font-size:${fontSize}px">${renderText(line.text)}</div>
+    ${line.notes ? `<div class="stage-note" style="font-size:${noteSize}px">${line.notes}</div>` : ''}
+    ${transcript ? `<div class="transcript-bar"><strong>🎤 Reconhecido:</strong> ${transcript}</div>` : ''}
+  `;
+}
+
+function renderText(text) {
+  return text.split('\n').map(line => {
+    const words = line.split(/\s+/).filter(w => w);
+    const spans = words.map(w => {
+      const clean = w.toLowerCase().replace(/[.,!?;:"""]/g, '');
+      const hl = highlightedWords.some(hw => clean.includes(hw) || hw.includes(clean));
+      return `<span class="word ${hl ? 'hl' : ''}">${w}</span>`;
+    }).join('');
+    return `<div style="margin-bottom:8px">${spans}</div>`;
+  }).join('');
+}
+
+function renderProgress() {
+  const lines = getCharacterLines(selectedCharId);
+  const total = lines.length;
+  const pct = total ? Math.round((currentIdx / Math.max(total - 1, 1)) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${currentIdx + 1} / ${total}`;
+  document.getElementById('btnPrev').disabled = currentIdx === 0;
+  document.getElementById('btnNext').disabled = currentIdx >= total - 1;
+}
+
+// ── ACTIONS ──
+function selectChar(id) {
+  selectedCharId = id;
+  currentIdx = 0;
+  highlightedWords = [];
+  transcript = '';
+  render();
+}
+
+function prevLine() {
+  if (currentIdx > 0) { currentIdx--; highlightedWords = []; transcript = ''; render(); }
+}
+
+function nextLine() {
+  const lines = getCharacterLines(selectedCharId);
+  if (currentIdx < lines.length - 1) { currentIdx++; highlightedWords = []; transcript = ''; render(); }
+}
+
+function resetScript() {
+  currentIdx = 0; highlightedWords = []; transcript = '';
+  if (isListening) stopMic();
+  render();
+}
+
+function changeFontSize(v) {
+  fontSize = parseInt(v);
+  document.getElementById('fontLabel').textContent = v + 'px';
+  renderStage();
+}
+
+// ── IMPROV ──
+function addImprov() {
+  const input = document.getElementById('improvInput');
+  const text = input.value.trim();
+  if (!text) return;
+  improvisations.push({ id: 'improv-' + Date.now(), text });
+  input.value = '';
+  renderImprovList();
+  renderProgress();
+}
+
+function removeImprov(id) {
+  improvisations = improvisations.filter(i => i.id !== id);
+  renderImprovList();
+  renderProgress();
+}
+
+function renderImprovList() {
+  const list = document.getElementById('improvList');
+  if (improvisations.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:8px">Nenhuma improvisação</div>';
+    return;
+  }
+  list.innerHTML = improvisations.map(i => `
+    <div class="improv-item">
+      <div class="improv-text">${i.text}</div>
+      <button class="improv-del" onclick="removeImprov('${i.id}')">×</button>
+    </div>
+  `).join('');
+}
+
+document.getElementById('improvInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addImprov();
+});
+
+// ── SPEECH ──
+function toggleMic() { isListening ? stopMic() : startMic(); }
+
+function startMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showStatus('error', '⚠️ Navegador não suporta reconhecimento de voz'); return; }
+
+  recognition = new SR();
+  recognition.lang = 'pt-BR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onresult = e => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += t + ' ';
+      else interim += t;
+    }
+    const spoken = (final || interim).trim();
+    transcript = spoken;
+    highlightWords(spoken);
+    renderStage();
+
+    if (final) {
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => { transcript = ''; highlightedWords = []; renderStage(); }, 3000);
+    }
+  };
+
+  recognition.onerror = e => {
+    if (e.error === 'aborted' || e.error === 'no-speech') return;
+    showStatus('error', '⚠️ Erro: ' + e.error);
+    stopMic();
+  };
+
+  recognition.onend = () => {
+    if (isListening) setTimeout(() => { try { recognition.start(); } catch(e){} }, 300);
+  };
+
+  recognition.start();
+  isListening = true;
+  document.getElementById('btnMic').className = 'btn btn-mic active';
+  document.getElementById('btnMic').textContent = '🔴 Parar';
+  showStatus('listening', '🎤 Escutando...');
+}
+
+function stopMic() {
+  isListening = false;
+  if (recognition) { try { recognition.abort(); } catch(e){} recognition = null; }
+  document.getElementById('btnMic').className = 'btn btn-mic';
+  document.getElementById('btnMic').textContent = '🎤 Escutar';
+  hideStatus();
+}
+
+function highlightWords(spoken) {
+  const lines = getCharacterLines(selectedCharId);
+  const line = lines[currentIdx];
+  if (!line) return;
+  const words = spoken.toLowerCase().split(/\s+/).filter(w => w.length > 1);
+  const lineWords = line.text.toLowerCase().split(/\s+/);
+  highlightedWords = words.filter(w => lineWords.some(lw => lw.includes(w) || w.includes(lw)));
+}
+
+// ── STATUS ──
+function showStatus(type, msg) {
+  const bar = document.getElementById('statusBar');
+  bar.className = 'status-bar ' + type;
+  document.getElementById('statusText').textContent = msg;
+}
+function hideStatus() {
+  document.getElementById('statusBar').className = 'status-bar';
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); nextLine(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevLine(); }
+  if (e.key === ' ') { e.preventDefault(); toggleMic(); }
+});
+
+// ── MOBILE SIDEBAR ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+
+// ── INIT ──
+render();
+</script>
+</body>
+</html>
