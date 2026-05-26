@@ -152,12 +152,21 @@
     box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
     min-height: 100px;
   }
-  .line-text .word { display: inline-block; margin-right: 10px; margin-bottom: 4px; transition: all 0.2s; }
+  .line-text .word { display: inline-block; margin-right: 10px; margin-bottom: 4px; transition: all 0.3s; }
+  /* quando mic ativo: palavras não ditas ficam apagadas */
+  .listening .line-text .word { color: rgba(240,230,211,0.25); }
+  /* palavra reconhecida: brilhante */
+  .listening .line-text .word.hl {
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,200,100,0.4);
+    font-weight: 700;
+    transform: scale(1.04);
+  }
+  /* sem mic ativo: tudo normal */
   .line-text .word.hl {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #1a1a1a; padding: 3px 8px; border-radius: 5px;
-    font-weight: 900; transform: scale(1.05);
-    box-shadow: 0 3px 10px rgba(255,107,53,0.4);
+    color: #ffffff;
+    text-shadow: 0 0 16px rgba(255,255,255,0.6);
+    font-weight: 700;
   }
   .stage-note {
     margin-top: 20px; padding: 12px 18px;
@@ -236,7 +245,53 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-  /* ── MOBILE ── */
+  /* ── EPIC LINE ── */
+  .card-epic {
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 40px rgba(255,215,0,0.2), 0 20px 60px rgba(0,0,0,0.5) !important;
+    animation: epicPulse 2s ease-in-out infinite;
+  }
+  @keyframes epicPulse {
+    0%,100%{box-shadow:0 0 30px rgba(255,215,0,0.15),0 20px 60px rgba(0,0,0,0.5)}
+    50%{box-shadow:0 0 60px rgba(255,215,0,0.35),0 20px 60px rgba(0,0,0,0.5)}
+  }
+  .card-epic .char-name {
+    background: linear-gradient(135deg,#ffd700,#ffaa00) !important;
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    filter: drop-shadow(0 2px 12px rgba(255,215,0,0.5)) !important;
+  }
+  .card-epic .line-text {
+    background: rgba(255,215,0,0.05) !important;
+    border-color: rgba(255,215,0,0.2) !important;
+    color: #fff8e1;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── LAUGH BADGE ── */
+  .laugh-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 14px; padding: 6px 14px;
+    background: rgba(255,200,0,0.1);
+    border: 1px solid rgba(255,200,0,0.3);
+    border-radius: 20px; font-size: 12px; color: #ffd700;
+    font-weight: 600; letter-spacing: 1px;
+    animation: badgePop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes badgePop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+
+  /* ── SOUND TOAST ── */
+  .sound-toast {
+    position: fixed; bottom: 90px; right: 16px;
+    background: rgba(15,18,37,0.95); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 14px; font-size: 12px; color: var(--accent);
+    display: none; align-items: center; gap: 6px; z-index: 300;
+    animation: toastIn 0.3s ease;
+  }
+  .sound-toast.show { display: flex; }
+  @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+
   @media (max-width: 768px) {
     .sidebar { display: none; }
     main { grid-template-columns: 1fr; }
@@ -319,6 +374,8 @@
   </div>
 </div>
 
+<div class="sound-toast" id="soundToast">🎵 <span id="soundToastText"></span></div>
+
 <div class="status-bar" id="statusBar">
   <div class="status-dot"></div>
   <span id="statusText">🎤 Escutando...</span>
@@ -363,14 +420,14 @@ const scriptLines = [
   {id:"1-1-19",character:"JOVEM 2",text:"Você entra e automaticamente sente vontade de cochilar.",act:1,scene:1},
   {id:"1-1-20",character:"TODOS",text:"(Eles sentam espalhados procurando sinal.)",act:1,scene:1,notes:"Ação cênica"},
   {id:"1-1-21",character:"JOVEM 1",text:"Qual é a senha do Wi-Fi?",act:1,scene:1},
-  {id:"1-1-22",character:"JOVEM 4",text:"\"Leiaumlivro\".",act:1,scene:1},
+  {id:"1-1-22",character:"JOVEM 4",text:"\"Leiaumlivro\".",act:1,scene:1,laugh:true},
   {id:"1-1-23",character:"TODOS",text:"Nãããão…",act:1,scene:1},
-  {id:"1-1-24",character:"JOVEM 3",text:"Isso já é humilhação.",act:1,scene:1},
+  {id:"1-1-24",character:"JOVEM 3",text:"Isso já é humilhação.",act:1,scene:1,laugh:true},
   {id:"1-1-25",character:"TODOS",text:"(O bibliotecário aparece silenciosamente atrás deles segurando um livro.)",act:1,scene:1,notes:"Ação cênica"},
-  {id:"1-1-26",character:"BIBLIOTECÁRIO",text:"A humilhação maior é entrar numa biblioteca e fingir que os livros são invisíveis.",act:1,scene:1},
+  {id:"1-1-26",character:"BIBLIOTECÁRIO",text:"A humilhação maior é entrar numa biblioteca e fingir que os livros são invisíveis.",act:1,scene:1,epic:true},
   {id:"1-1-27",character:"TODOS",text:"(Os jovens se assustam.)",act:1,scene:1,notes:"Ação cênica"},
   {id:"1-1-28",character:"JOVEM 2",text:"Meu Deus!\nVocê brotou do além!",act:1,scene:1},
-  {id:"1-1-29",character:"JOVEM 5",text:"NPC de biblioteca.",act:1,scene:1},
+  {id:"1-1-29",character:"JOVEM 5",text:"NPC de biblioteca.",act:1,scene:1,laugh:true},
   {id:"1-1-30",character:"BIBLIOTECÁRIO",text:"Interessante…\nVocês conseguem passar horas olhando uma tela…\nMas cinco segundos perto de um livro já causa sofrimento.",act:1,scene:1},
   {id:"1-1-31",character:"JOVEM 1",text:"Não é sofrimento…\nÉ costume.",act:1,scene:1},
   {id:"1-1-32",character:"JOVEM 3",text:"Livro parece sempre coisa de prova.",act:1,scene:1},
@@ -414,21 +471,21 @@ const scriptLines = [
   {id:"2-1-8",character:"JOÃO GRILO",text:"(Indignado)\nOxente!\nPor que eu primeiro?",act:2,scene:1},
   {id:"2-1-9",character:"ENCOURADO",text:"Porque você enganava padre, patrão, coronel…\nSe duvidar, enganava até relógio!",act:2,scene:1},
   {id:"2-1-10",character:"CHICÓ",text:"Isso é verdade.",act:2,scene:1},
-  {id:"2-1-11",character:"JOÃO GRILO",text:"Cale a boca, Chicó!\nAqui não é hora de sinceridade.",act:2,scene:1},
+  {id:"2-1-11",character:"JOÃO GRILO",text:"Cale a boca, Chicó!\nAqui não é hora de sinceridade.",act:2,scene:1,laugh:true},
   {id:"2-1-12",character:"CHICÓ",text:"Foi mal.",act:2,scene:1},
   {id:"2-1-13",character:"ENCOURADO",text:"E ainda fazia tudo sorrindo!",act:2,scene:1},
-  {id:"2-1-14",character:"JOÃO GRILO",text:"(Orgulhoso)\nMas eu era pobre!\nNo sertão, quem não aprende a ser esperto morre de fome.",act:2,scene:1},
+  {id:"2-1-14",character:"JOÃO GRILO",text:"(Orgulhoso)\nMas eu era pobre!\nNo sertão, quem não aprende a ser esperto morre de fome.",act:2,scene:1,epic:true},
   {id:"2-1-15",character:"ENCOURADO",text:"E acha que isso justifica tudo?",act:2,scene:1},
-  {id:"2-1-16",character:"JOÃO GRILO",text:"Não justifica…\nMas explica muita coisa.",act:2,scene:1},
+  {id:"2-1-16",character:"JOÃO GRILO",text:"Não justifica…\nMas explica muita coisa.",act:2,scene:1,epic:true},
   {id:"2-1-17",character:"CHICÓ",text:"(Levantando a mão timidamente)\nPosso falar uma coisa?",act:2,scene:1},
   {id:"2-1-18",character:"ENCOURADO",text:"Não.",act:2,scene:1},
   {id:"2-1-19",character:"CHICÓ",text:"Mesmo assim eu vou falar.\nEu só seguia João porque sozinho eu tinha mais medo ainda.",act:2,scene:1},
   {id:"2-1-20",character:"JOÃO GRILO",text:"Tá vendo?\nEu fazia caridade.",act:2,scene:1},
   {id:"2-1-21",character:"ENCOURADO",text:"Caridade?\nVocê vivia criando confusão!",act:2,scene:1},
   {id:"2-1-22",character:"JOÃO GRILO",text:"Mas confusão inteligente.",act:2,scene:1},
-  {id:"2-1-23",character:"JESUS",text:"Silêncio.",act:2,scene:1},
+  {id:"2-1-23",character:"JESUS",text:"Silêncio.",act:2,scene:1,epic:true},
   {id:"2-1-24",character:"TODOS",text:"(Todos se calam imediatamente.)",act:2,scene:1,notes:"Ação cênica"},
-  {id:"2-1-25",character:"JESUS",text:"Toda alma merece ser ouvida antes do julgamento.",act:2,scene:1},
+  {id:"2-1-25",character:"JESUS",text:"Toda alma merece ser ouvida antes do julgamento.",act:2,scene:1,epic:true},
   {id:"2-1-26",character:"ENCOURADO",text:"Mas esses dois…",act:2,scene:1},
   {id:"2-1-27",character:"JESUS",text:"Eu disse silêncio.",act:2,scene:1},
   {id:"2-1-28",character:"TODOS",text:"(Encourado recua irritado.)",act:2,scene:1,notes:"Ação cênica"},
@@ -436,7 +493,7 @@ const scriptLines = [
   {id:"2-1-30",character:"ENCOURADO",text:"Bom?\nEsse aí mentia mais do que respirava!",act:2,scene:1},
   {id:"2-1-31",character:"CHICÓ",text:"Mas era mentira sem maldade!",act:2,scene:1},
   {id:"2-1-32",character:"JOÃO GRILO",text:"Isso é verdade.\nChicó mente por esporte.",act:2,scene:1},
-  {id:"2-1-33",character:"CHICÓ",text:"Às vezes eu nem queria mentir…\nA mentira já saía pronta.",act:2,scene:1},
+  {id:"2-1-33",character:"CHICÓ",text:"Às vezes eu nem queria mentir…\nA mentira já saía pronta.",act:2,scene:1,laugh:true},
   {id:"2-1-34",character:"TODOS",text:"(Plateia ri.)",act:2,scene:1,notes:"Ação cênica"},
   {id:"2-1-35",character:"JESUS",text:"E você, João Grilo?\nO que tem a dizer sobre sua vida?",act:2,scene:1},
   {id:"2-1-36",character:"TODOS",text:"(João respira fundo.)",act:2,scene:1,notes:"Ação cênica"},
@@ -459,11 +516,11 @@ const scriptLines = [
   {id:"2-1-53",character:"JOÃO GRILO",text:"Se não fosse a atrevida da esperança, pobre nem vivia.",act:2,scene:1},
   {id:"2-1-54",character:"MARIA",text:"(Sorrindo levemente)\nContinua respondão também.",act:2,scene:1},
   {id:"2-1-55",character:"JOÃO GRILO",text:"É nervoso.",act:2,scene:1},
-  {id:"2-1-56",character:"CHICÓ",text:"Ele responde até morto.",act:2,scene:1},
+  {id:"2-1-56",character:"CHICÓ",text:"Ele responde até morto.",act:2,scene:1,laugh:true},
   {id:"2-1-57",character:"TODOS",text:"(Risos.)",act:2,scene:1,notes:"Ação cênica"},
   {id:"2-1-58",character:"MARIA",text:"(Com doçura)\nJesus… olhe para eles com compaixão.\nSão filhos sofridos do sertão.",act:2,scene:1},
   {id:"2-1-59",character:"ENCOURADO",text:"Mas pecaram!",act:2,scene:1},
-  {id:"2-1-60",character:"MARIA",text:"E quem nunca pecou?",act:2,scene:1},
+  {id:"2-1-60",character:"MARIA",text:"E quem nunca pecou?",act:2,scene:1,epic:true},
   {id:"2-1-61",character:"TODOS",text:"(Silêncio.)",act:2,scene:1,notes:"Ação cênica"},
   {id:"2-1-62",character:"MARIA",text:"João Grilo errou muitas vezes.\nMas também sofreu muito.\nConheceu a fome…\nA injustiça…\nO abandono…",act:2,scene:1},
   {id:"2-1-63",character:"CHICÓ",text:"E as contas também.",act:2,scene:1},
@@ -474,31 +531,31 @@ const scriptLines = [
   {id:"2-1-68",character:"MARIA",text:"E quantas vezes ele também foi enganado?",act:2,scene:1},
   {id:"2-1-69",character:"TODOS",text:"(Encourado se cala por um instante.)",act:2,scene:1,notes:"Ação cênica"},
   {id:"2-1-70",character:"JESUS",text:"(Refletindo)\nA dor não apaga os erros…\nMas ensina humanidade.",act:2,scene:1},
-  {id:"2-1-71",character:"JOÃO GRILO",text:"Eu só queria sobreviver.",act:2,scene:1},
+  {id:"2-1-71",character:"JOÃO GRILO",text:"Eu só queria sobreviver.",act:2,scene:1,epic:true},
   {id:"2-1-72",character:"MARIA",text:"E ajudou muita gente no caminho…\nMesmo do seu jeito torto.",act:2,scene:1},
   {id:"2-1-73",character:"CHICÓ",text:"Muito torto.",act:2,scene:1},
   {id:"2-1-74",character:"JOÃO GRILO",text:"Rapaz, hoje você resolveu me destruir.",act:2,scene:1},
   {id:"2-1-75",character:"ENCOURADO",text:"Isso é injusto!",act:2,scene:1},
-  {id:"2-1-76",character:"MARIA",text:"Injustiça é condenar alguém sem enxergar sua história.",act:2,scene:1},
+  {id:"2-1-76",character:"MARIA",text:"Injustiça é condenar alguém sem enxergar sua história.",act:2,scene:1,epic:true},
   {id:"2-1-77",character:"ENCOURADO",text:"Então agora qualquer um faz besteira e pronto?",act:2,scene:1},
-  {id:"2-1-78",character:"JESUS",text:"Não.\nMas nenhum ser humano é apenas seus erros.",act:2,scene:1},
+  {id:"2-1-78",character:"JESUS",text:"Não.\nMas nenhum ser humano é apenas seus erros.",act:2,scene:1,epic:true},
   {id:"2-1-79",character:"TODOS",text:"(Pausa.)",act:2,scene:1,notes:"Ação cênica"},
   {id:"2-1-80",character:"JESUS",text:"João Grilo…\nVocê terá uma nova chance.",act:2,scene:1},
   {id:"2-1-81",character:"JOÃO GRILO",text:"(Animado, olhando pra Chicó)\nQuer dizer que eu volto?",act:2,scene:1},
   {id:"2-1-82",character:"CHICÓ",text:"João… pergunta direito pra ter certeza!",act:2,scene:1},
   {id:"2-1-83",character:"JOÃO GRILO",text:"Eu volto vivo mesmo?\nRespirando e tudo?",act:2,scene:1},
   {id:"2-1-84",character:"JESUS",text:"Volta.\nMas trate de viver direito dessa vez.",act:2,scene:1},
-  {id:"2-1-85",character:"JOÃO GRILO",text:"Vou tentar…\nMas num prometo milagre também não.",act:2,scene:1},
+  {id:"2-1-85",character:"JOÃO GRILO",text:"Vou tentar…\nMas num prometo milagre também não.",act:2,scene:1,laugh:true},
   {id:"2-1-86",character:"TODOS",text:"(Plateia ri.)",act:2,scene:1,notes:"Ação cênica"},
   {id:"2-1-87",character:"JESUS",text:"E você, Chicó?",act:2,scene:1},
   {id:"2-1-88",character:"CHICÓ",text:"Eu posso voltar também?",act:2,scene:1},
   {id:"2-1-89",character:"ENCOURADO",text:"Esse aí vai voltar mentindo até pros anjos.",act:2,scene:1},
   {id:"2-1-90",character:"CHICÓ",text:"Eu posso explicar…",act:2,scene:1},
   {id:"2-1-91",character:"JESUS",text:"Pode voltar também.\nMas tente falar menos mentira.",act:2,scene:1},
-  {id:"2-1-92",character:"CHICÓ",text:"Ave Maria…\nAí já é mais difícil.",act:2,scene:1},
+  {id:"2-1-92",character:"CHICÓ",text:"Ave Maria…\nAí já é mais difícil.",act:2,scene:1,laugh:true},
   {id:"2-1-93",character:"TODOS",text:"(Todos riem.)",act:2,scene:1,notes:"Ação cênica"},
   {id:"2-1-94",character:"ENCOURADO",text:"(Resmungando e cruzando os braços)\nAssim não tem graça nenhuma…",act:2,scene:1},
-  {id:"2-1-95",character:"MARIA",text:"A graça está justamente no perdão.",act:2,scene:1},
+  {id:"2-1-95",character:"MARIA",text:"A graça está justamente no perdão.",act:2,scene:1,epic:true},
   {id:"2-1-96",character:"TODOS",text:"(Luzes diminuem lentamente.)",act:2,scene:1,notes:"Ação cênica"},
   {id:"2-1-97",character:"JOÃO GRILO",text:"Vamos simbora, Chicó!",act:2,scene:1},
   {id:"2-1-98",character:"CHICÓ",text:"Só acredito porque tô vendo!",act:2,scene:1},
@@ -561,14 +618,20 @@ function renderStage() {
   const card = document.getElementById('card');
   if (!line) {
     card.innerHTML = '<div class="empty-state">Selecione um personagem para começar</div>';
+    card.className = 'teleprompter-card';
     return;
   }
   const ns = Math.round(fontSize * 0.7);
   const noteS = Math.round(fontSize * 0.5);
+
+  // apply epic/laugh class
+  card.className = 'teleprompter-card' + (line.epic ? ' card-epic' : '');
+
   card.innerHTML = `
     <div class="char-name" style="font-size:${ns}px">${line.character}</div>
     <div class="line-text" style="font-size:${fontSize}px">${renderText(line.text)}</div>
     ${line.notes?`<div class="stage-note" style="font-size:${noteS}px">${line.notes}</div>`:''}
+    ${line.laugh?`<div class="laugh-badge">😂 RISADA DO PÚBLICO</div>`:''}
     ${transcript?`<div class="transcript-bar"><strong>🎤</strong> ${transcript}</div>`:''}
   `;
 }
@@ -650,9 +713,22 @@ document.getElementById('improvInput').addEventListener('keydown',e=>{if(e.key==
 function toggleMic(){isListening?stopMic():startMic();}
 function startMic(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){showStatus('error','⚠️ Navegador não suporta reconhecimento de voz');return;}
+  if(!SR){showStatus('error','⚠️ Navegador não suporta. Use Chrome.');return;}
+
+  // pedir permissão explicitamente (necessário no mobile)
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    stream.getTracks().forEach(t=>t.stop()); // libera o stream, só precisamos da permissão
+    _iniciarReconhecimento();
+  }).catch(err=>{
+    showStatus('error','⚠️ Permissão de microfone negada');
+  });
+}
+function _iniciarReconhecimento(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   recognition=new SR();
-  recognition.lang='pt-BR';recognition.continuous=true;recognition.interimResults=true;
+  recognition.lang='pt-BR';
+  recognition.continuous=true;
+  recognition.interimResults=true;
   recognition.onresult=e=>{
     let interim='',final='';
     for(let i=e.resultIndex;i<e.results.length;i++){
@@ -661,10 +737,19 @@ function startMic(){
     }
     const spoken=(final||interim).trim();
     transcript=spoken;highlightWords(spoken);renderStage();
-    if(final){clearTimeout(silenceTimer);silenceTimer=setTimeout(()=>{transcript='';highlightedWords=[];renderStage();},3000);}
+    if(final){
+      clearTimeout(silenceTimer);
+      silenceTimer=setTimeout(()=>{transcript='';highlightedWords=[];renderStage();},3000);
+    }
   };
-  recognition.onerror=e=>{if(e.error==='aborted'||e.error==='no-speech')return;showStatus('error','⚠️ Erro: '+e.error);stopMic();};
-  recognition.onend=()=>{if(isListening)setTimeout(()=>{try{recognition.start();}catch(e){}},300);};
+  recognition.onerror=e=>{
+    if(e.error==='aborted'||e.error==='no-speech')return;
+    if(e.error==='network'){showStatus('error','⚠️ Erro de rede no mic');return;}
+    showStatus('error','⚠️ Erro: '+e.error);stopMic();
+  };
+  recognition.onend=()=>{
+    if(isListening)setTimeout(()=>{try{recognition.start();}catch(e){}},300);
+  };
   recognition.start();
   isListening=true;
   setMicActive(true);
@@ -673,9 +758,11 @@ function startMic(){
 function stopMic(){
   isListening=false;
   if(recognition){try{recognition.abort();}catch(e){}recognition=null;}
-  setMicActive(false);hideStatus();
+  highlightedWords=[];transcript='';
+  setMicActive(false);hideStatus();renderStage();
 }
 function setMicActive(on){
+  document.body.classList.toggle('listening',on);
   document.getElementById('btnMic').className='btn btn-mic'+(on?' active':'');
   document.getElementById('btnMic').textContent=on?'🔴 Parar':'🎤 Escutar';
   document.getElementById('mBtnMic').className='nav-btn nav-btn-mic'+(on?' active':'');
@@ -700,6 +787,129 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();prevLine();}
   if(e.key===' '){e.preventDefault();toggleMic();}
 });
+
+// ── AUDIO ENGINE ──
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function showSoundToast(msg) {
+  const t = document.getElementById('soundToast');
+  document.getElementById('soundToastText').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function playLaughTrack() {
+  const ctx = getAudioCtx();
+  showSoundToast('😂 Risada do público');
+  const now = ctx.currentTime;
+  for (let w = 0; w < 6; w++) {
+    const t = now + w * 0.18;
+    for (let i = 0; i < 8; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const freq = 280 + Math.random() * 300 + (w%2===0?80:-40);
+      osc.frequency.setValueAtTime(freq, t);
+      osc.frequency.linearRampToValueAtTime(freq*0.85, t+0.15);
+      osc.type = 'sawtooth';
+      const vol = 0.018 + Math.random()*0.012;
+      gain.gain.setValueAtTime(0,t);
+      gain.gain.linearRampToValueAtTime(vol,t+0.02);
+      gain.gain.linearRampToValueAtTime(0,t+0.16);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t+0.18);
+    }
+  }
+}
+function playSanfona() {
+  const ctx = getAudioCtx();
+  showSoundToast('🪗 Sanfona nordestina');
+  const now = ctx.currentTime;
+  const scale = [261.6,293.7,329.6,349.2,392.0,440.0,493.9,523.3];
+  [4,4,5,4,3,2,0,2,4,4,4,5,4,3,1,0].forEach((note,i) => {
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type='sawtooth'; osc.frequency.value=scale[note];
+    const t = now+i*0.18;
+    gain.gain.setValueAtTime(0,t); gain.gain.linearRampToValueAtTime(0.08,t+0.02);
+    gain.gain.linearRampToValueAtTime(0.06,t+0.12); gain.gain.linearRampToValueAtTime(0,t+0.17);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t+0.18);
+  });
+}
+function playVento() {
+  const ctx = getAudioCtx();
+  showSoundToast('💨 Vento do sertão');
+  const now = ctx.currentTime;
+  const buf = ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<data.length;i++) data[i]=Math.random()*2-1;
+  const src = ctx.createBufferSource(); src.buffer=buf;
+  const filter = ctx.createBiquadFilter();
+  filter.type='bandpass'; filter.frequency.value=400; filter.Q.value=0.5;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0,now); gain.gain.linearRampToValueAtTime(0.15,now+0.5);
+  gain.gain.linearRampToValueAtTime(0.1,now+1.5); gain.gain.linearRampToValueAtTime(0,now+2);
+  src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  src.start(now); src.stop(now+2);
+}
+function playDivino() {
+  const ctx = getAudioCtx();
+  showSoundToast('✨ Momento épico');
+  const now = ctx.currentTime;
+  [261.6,329.6,392.0,523.3].forEach((freq,i) => {
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type='sine'; osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0,now+i*0.05);
+    gain.gain.linearRampToValueAtTime(0.06,now+i*0.05+0.1);
+    gain.gain.linearRampToValueAtTime(0,now+1.5);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now+i*0.05); osc.stop(now+1.6);
+  });
+}
+function playNordestina() {
+  const ctx = getAudioCtx();
+  showSoundToast('🎶 Música nordestina!');
+  const now = ctx.currentTime;
+  const scale = [261.6,293.7,329.6,392.0,440.0,523.3];
+  [0,2,4,5,4,2,0,1,2,4,5,5,4,2,1,0].forEach((n,i) => {
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type='triangle'; osc.frequency.value=scale[n];
+    const t = now+i*0.15;
+    gain.gain.setValueAtTime(0,t); gain.gain.linearRampToValueAtTime(0.09,t+0.03);
+    gain.gain.linearRampToValueAtTime(0,t+0.14);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t+0.15);
+  });
+}
+function playLineEffect(line) {
+  if (!line) return;
+  if (line.laugh) { setTimeout(playLaughTrack, 700); return; }
+  if (line.id==='1-1-61'||line.id==='1-1-62') { playSanfona(); return; }
+  if (line.id==='2-1-1') { playVento(); return; }
+  if (line.id==='2-1-100') { playNordestina(); return; }
+  if (line.epic) { playDivino(); return; }
+}
+
+// Override nav to trigger audio
+const _baseNext = nextLine, _basePrev = prevLine;
+nextLine = function() {
+  const lines=getLines();
+  if(currentIdx<lines.length-1){currentIdx++;highlightedWords=[];transcript='';render();playLineEffect(getLines()[currentIdx]);}
+};
+prevLine = function() {
+  if(currentIdx>0){currentIdx--;highlightedWords=[];transcript='';render();playLineEffect(getLines()[currentIdx]);}
+};
+
+// also hook keyboard
+document.removeEventListener('keydown', window._kbHandler);
+window._kbHandler = e => {
+  if(e.target.tagName==='INPUT')return;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();nextLine();}
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();prevLine();}
+  if(e.key===' '){e.preventDefault();toggleMic();}
+};
+document.addEventListener('keydown', window._kbHandler);
 
 render();
 </script>
